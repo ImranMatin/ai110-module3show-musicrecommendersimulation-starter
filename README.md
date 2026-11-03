@@ -134,6 +134,12 @@ pip install -r requirements.txt
 python -m src.main
 ```
 
+Or run the interactive web UI on localhost (http://localhost:8501):
+
+```bash
+streamlit run app.py
+```
+
 ### Running Tests
 
 Run the starter tests with:
