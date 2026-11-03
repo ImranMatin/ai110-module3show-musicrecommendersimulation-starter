@@ -23,12 +23,29 @@ Prompts:
 
 Explain your scoring approach in simple language.  
 
-Prompts:  
+Think of the model as a judge handing out points. For every song in the catalog,
+it looks at three things about the listener: the genre they like, the mood they're
+in, and how energetic they want the music to feel. Each song then earns points for
+how well it matches:
 
-- What features of each song are used (genre, energy, mood, etc.)  
-- What user preferences are considered  
-- How does the model turn those into a score  
-- What changes did you make from the starter logic  
+- If the song's **genre** is the listener's favorite, it gets **2 points** — genre
+  is treated as the strongest signal of taste.
+- If the song's **mood** matches, it gets **1 point**.
+- For **energy**, the song earns points for being *close* to the listener's target.
+  A perfect match is worth a full point; the further off it is, the fewer points it
+  gets. So a listener who wants calm music won't be handed the loudest track just
+  because it's loud.
+- A small **half-point bonus** goes to acoustic songs if the listener said they
+  prefer acoustic music.
+
+Once every song has a point total, the model simply sorts them from highest to
+lowest and hands back the top few. It also keeps a short list of *reasons* for each
+pick (e.g., "genre match (+2.0)") so the listener can see why a song was suggested.
+
+**What changed from the starter:** the starter just returned the first few songs in
+the file without judging them. The new version actually reads the song data as
+numbers, scores every song with the point system above, ranks them, and explains
+each recommendation.
 
 Avoid code here. Pretend you are explaining the idea to a friend who does not program.
 
