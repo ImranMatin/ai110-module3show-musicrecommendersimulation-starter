@@ -1,16 +1,26 @@
 import csv
 from typing import List, Dict, Tuple, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 # Columns in data/songs.csv that must be read as numbers, not strings.
-FLOAT_FIELDS = {"energy", "valence", "danceability", "acousticness"}
-INT_FIELDS = {"id", "tempo_bpm"}
+FLOAT_FIELDS = {"energy", "valence", "danceability", "acousticness", "instrumentalness"}
+INT_FIELDS = {"id", "tempo_bpm", "popularity", "release_decade"}
+BOOL_FIELDS = {"explicit"}
 
 # Algorithm Recipe weights (see README "How The System Works").
 GENRE_POINTS = 2.0
 MOOD_POINTS = 1.0
 ACOUSTIC_POINTS = 0.5
 ACOUSTIC_THRESHOLD = 0.5  # a song counts as "acoustic" at/above this acousticness
+
+# Advanced-feature weights (Challenge 1).
+DECADE_POINTS = 1.0            # exact release-decade match
+POPULARITY_WEIGHT = 1.0        # scaled by popularity/100 when the user wants hits
+MOOD_TAG_POINTS = 0.5          # per overlapping detailed mood tag
+MOOD_TAG_CAP = 1.5             # most the mood-tag overlap can contribute
+INSTRUMENTAL_POINTS = 0.5      # bonus for instrumental tracks when preferred
+INSTRUMENTAL_THRESHOLD = 0.5
+EXPLICIT_PENALTY = 1.0         # subtracted for explicit songs when the user avoids them
 
 
 @dataclass
@@ -26,6 +36,12 @@ class Song:
     valence: float
     danceability: float
     acousticness: float
+    # Advanced features (defaults keep older callers and tests working).
+    popularity: int = 0
+    release_decade: int = 0
+    mood_tags: List[str] = field(default_factory=list)
+    instrumentalness: float = 0.0
+    explicit: bool = False
 
 
 @dataclass
@@ -35,6 +51,55 @@ class UserProfile:
     favorite_mood: str
     target_energy: float
     likes_acoustic: bool
+    # Advanced preferences (all optional; omitting them keeps baseline scoring).
+    favorite_decade: Optional[int] = None
+    prefers_popular: bool = False
+    desired_mood_tags: List[str] = field(default_factory=list)
+    likes_instrumental: bool = False
+    avoid_explicit: bool = False
+
+
+def _advanced_points(
+    song_popularity: int,
+    song_decade: int,
+    song_tags: List[str],
+    song_instrumentalness: float,
+    song_explicit: bool,
+    favorite_decade: Optional[int],
+    prefers_popular: bool,
+    desired_tags: List[str],
+    likes_instrumental: bool,
+    avoid_explicit: bool,
+) -> Tuple[float, List[str]]:
+    """Score the advanced features shared by both the dict and Song paths."""
+    score = 0.0
+    reasons: List[str] = []
+
+    if favorite_decade is not None and song_decade == favorite_decade:
+        score += DECADE_POINTS
+        reasons.append(f"from favorite decade ({song_decade}s) (+{DECADE_POINTS})")
+
+    if prefers_popular and song_popularity:
+        pop_bonus = POPULARITY_WEIGHT * (song_popularity / 100.0)
+        score += pop_bonus
+        reasons.append(f"popular ({song_popularity}/100) (+{pop_bonus:.2f})")
+
+    if desired_tags and song_tags:
+        shared = [t for t in song_tags if t in desired_tags]
+        if shared:
+            tag_bonus = min(MOOD_TAG_POINTS * len(shared), MOOD_TAG_CAP)
+            score += tag_bonus
+            reasons.append(f"mood tags {shared} (+{tag_bonus:.2f})")
+
+    if likes_instrumental and song_instrumentalness >= INSTRUMENTAL_THRESHOLD:
+        score += INSTRUMENTAL_POINTS
+        reasons.append(f"instrumental (+{INSTRUMENTAL_POINTS})")
+
+    if avoid_explicit and song_explicit:
+        score -= EXPLICIT_PENALTY
+        reasons.append(f"explicit content (-{EXPLICIT_PENALTY})")
+
+    return score, reasons
 
 
 class Recommender:
@@ -67,6 +132,21 @@ class Recommender:
             score += ACOUSTIC_POINTS
             reasons.append(f"acoustic pick (+{ACOUSTIC_POINTS})")
 
+        adv_score, adv_reasons = _advanced_points(
+            song.popularity,
+            song.release_decade,
+            song.mood_tags,
+            song.instrumentalness,
+            song.explicit,
+            user.favorite_decade,
+            user.prefers_popular,
+            user.desired_mood_tags,
+            user.likes_instrumental,
+            user.avoid_explicit,
+        )
+        score += adv_score
+        reasons.extend(adv_reasons)
+
         return score, reasons
 
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
@@ -92,6 +172,10 @@ def load_songs(csv_path: str) -> List[Dict]:
                     row[key] = int(value)
                 elif key in FLOAT_FIELDS:
                     row[key] = float(value)
+                elif key in BOOL_FIELDS:
+                    row[key] = value.strip().lower() == "true"
+                elif key == "mood_tags":
+                    row[key] = [t for t in value.split("|") if t]
             songs.append(row)
     print(f"Loaded songs: {len(songs)}")
     return songs
@@ -119,6 +203,21 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     if user_prefs.get("likes_acoustic") and song["acousticness"] >= ACOUSTIC_THRESHOLD:
         score += ACOUSTIC_POINTS
         reasons.append(f"acoustic pick (+{ACOUSTIC_POINTS})")
+
+    adv_score, adv_reasons = _advanced_points(
+        song.get("popularity", 0),
+        song.get("release_decade", 0),
+        song.get("mood_tags", []),
+        song.get("instrumentalness", 0.0),
+        song.get("explicit", False),
+        user_prefs.get("favorite_decade"),
+        user_prefs.get("prefers_popular", False),
+        user_prefs.get("desired_mood_tags", []),
+        user_prefs.get("likes_instrumental", False),
+        user_prefs.get("avoid_explicit", False),
+    )
+    score += adv_score
+    reasons.extend(adv_reasons)
 
     return score, reasons
 

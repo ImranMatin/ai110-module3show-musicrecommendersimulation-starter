@@ -14,7 +14,15 @@ from src.recommender import load_songs, recommend_songs
 # Named taste profiles used to stress-test the recommender, including two
 # "adversarial" profiles with conflicting preferences.
 PROFILES = {
-    "High-Energy Pop": {"genre": "pop", "mood": "happy", "energy": 0.9},
+    "High-Energy Pop (modern hits, no explicit)": {
+        "genre": "pop",
+        "mood": "happy",
+        "energy": 0.9,
+        "favorite_decade": 2020,
+        "prefers_popular": True,
+        "desired_mood_tags": ["euphoric", "upbeat"],
+        "avoid_explicit": True,
+    },
     "Chill Lofi": {
         "genre": "lofi",
         "mood": "chill",
