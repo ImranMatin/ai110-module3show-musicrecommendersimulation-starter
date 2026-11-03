@@ -2,14 +2,29 @@
 
 ## 1. Model Name  
 
-Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
+**VibeFinder 1.0** — a tiny content-based music recommender that matches songs to a
+listener's vibe (genre, mood, and energy).
 
 ---
 
 ## 2. Intended Use  
 
 Describe what your recommender is designed to do and who it is for. 
+
+**Goal / task.** VibeFinder suggests songs from a small catalog that best fit a
+listener's stated taste. The user describes their vibe (favorite genre, favorite
+mood, target energy, and whether they like acoustic music) and the system returns a
+ranked list of the top matches with a short reason for each pick.
+
+**Assumptions.** It assumes the user can name a single favorite genre and mood, and
+that those labels (plus energy) are enough to capture what they want right now.
+
+**Intended for.** This is a classroom simulation for learning how recommenders turn
+data into ranked suggestions — not a product for real listeners.
+
+**Not intended for.** It should not be used to make real recommendations, to judge
+musical quality, or in any setting where a biased suggestion could matter. It only
+knows 18 songs and ignores most of what makes music feel personal.
 
 Prompts:  
 
@@ -55,6 +70,21 @@ Avoid code here. Pretend you are explaining the idea to a friend who does not pr
 
 Describe the dataset the model uses.  
 
+The catalog is a single CSV file, `data/songs.csv`, with **18 songs**. Each song has
+nine features: title, artist, genre, mood, energy, tempo (BPM), valence,
+danceability, and acousticness. Energy, valence, danceability, and acousticness are
+numbers from 0.0 to 1.0.
+
+The starter file had 10 songs, and I **added 8 more** to widen the variety. Genres
+now include pop, lofi, rock, synthwave, ambient, jazz, indie pop, country, hip-hop,
+classical, edm, reggae, metal, and folk. Moods include happy, chill, intense, moody,
+relaxed, focused, nostalgic, confident, melancholy, energetic, aggressive, romantic,
+and dreamy.
+
+**Limits.** 18 songs is tiny, so most genres appear only once or twice. There are no
+lyrics, no language, no release year, and no popularity data — so a big part of real
+musical taste is simply missing.
+
 Prompts:  
 
 - How many songs are in the catalog  
@@ -67,6 +97,17 @@ Prompts:
 ## 5. Strengths  
 
 Where does your system seem to work well  
+
+VibeFinder works best for **clear, consistent profiles** where genre, mood, and
+energy all point the same way. The Chill Lofi profile returned quiet, acoustic
+tracks like *Library Rain* and *Midnight Coding*, which matched my intuition
+perfectly. The High-Energy Pop and Deep Intense Rock profiles also returned sensible
+top picks.
+
+The scoring captures two patterns well: it reliably groups songs by genre, and the
+energy-closeness rule correctly avoids handing a calm listener the loudest song. The
+reasons it prints ("genre match (+2.0); energy close to 0.35 (+1.00)") also make it
+easy to see *why* each song was chosen, which is a real strength for a learning tool.
 
 Prompts:  
 
@@ -153,6 +194,14 @@ output and reasons for each profile.
 
 Ideas for how you would improve the model next.  
 
+1. **Rebalance the weights or make genre a soft signal.** Right now genre can
+   outweigh a big energy miss. I'd lower the genre weight, or give partial credit
+   for related genres (e.g., "pop" and "indie pop"), so near-misses aren't buried.
+2. **Use more features.** Add valence, tempo, and danceability to the score so two
+   chill-lofi songs that feel different (happy vs. sad) don't tie.
+3. **Add variety to the top results.** Nudge the ranking so the top 5 isn't all one
+   genre or artist — closer to how real apps mix familiar and new.
+
 Prompts:  
 
 - Additional features or preferences  
@@ -165,6 +214,30 @@ Prompts:
 ## 9. Personal Reflection  
 
 A few sentences about your experience.  
+
+*(Draft in my own voice — edit to match your real experience.)*
+
+My biggest learning moment was seeing that a "recommendation" is really just scoring
+and sorting. Once I split the problem into a scoring rule for one song and a ranking
+rule for the whole list, the whole thing stopped feeling like magic. The experiments
+drove this home: when I doubled the energy weight and halved genre, the top 5 barely
+changed, which taught me that the *data* matters as much as the weights — my pop
+songs were already high-energy, so the signals never really competed.
+
+Using an AI tool sped up the boring parts — parsing the CSV, formatting the terminal
+output, and setting up test profiles — so I could spend more time thinking about the
+logic. But I had to double-check things: I checked that numbers were actually
+converted from text to floats, that the sort went highest-to-lowest, and that the
+"reasons" matched the real math. The AI also run my app and caught an import bug I
+would have missed, but I still read the scores myself to make sure they made sense.
+
+What surprised me most is how a few simple rules can still *feel* like a real
+recommendation — the explanations ("genre match, energy close to your target") make
+even basic math feel personal. It also made me more skeptical of real apps: if a
+toy system over-prioritizes one feature and traps you in a genre bubble, big ones
+probably have their own hidden biases too. If I kept going, I'd add more features
+(valence, tempo), soften the genre matching so related genres count, and push for
+more variety in the top results.
 
 Prompts:  
 
