@@ -180,9 +180,95 @@ Top recommendations:
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+### Stress test across diverse profiles
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
+I ran five profiles through the recommender, including two "adversarial" profiles
+with conflicting preferences, via `python -m src.main`:
+
+```
+=== Profile: High-Energy Pop ===
+preferences: {'genre': 'pop', 'mood': 'happy', 'energy': 0.9}
+
+1. Sunrise City — Neon Echo  (score: 3.92)
+   reasons: genre match (pop) (+2.0); mood match (happy) (+1.0); energy close to 0.9 (+0.92)
+2. Gym Hero — Max Pulse  (score: 2.97)
+   reasons: genre match (pop) (+2.0); energy close to 0.9 (+0.97)
+3. Rooftop Lights — Indigo Parade  (score: 1.86)
+   reasons: mood match (happy) (+1.0); energy close to 0.9 (+0.86)
+4. Storm Runner — Voltline  (score: 0.99)
+   reasons: energy close to 0.9 (+0.99)
+5. Pulse Reactor — Hz Division  (score: 0.95)
+   reasons: energy close to 0.9 (+0.95)
+
+=== Profile: Chill Lofi ===
+preferences: {'genre': 'lofi', 'mood': 'chill', 'energy': 0.35, 'likes_acoustic': True}
+
+1. Library Rain — Paper Lanterns  (score: 4.50)
+   reasons: genre match (lofi) (+2.0); mood match (chill) (+1.0); energy close to 0.35 (+1.00); acoustic pick (+0.5)
+2. Midnight Coding — LoRoom  (score: 4.43)
+   reasons: genre match (lofi) (+2.0); mood match (chill) (+1.0); energy close to 0.35 (+0.93); acoustic pick (+0.5)
+3. Focus Flow — LoRoom  (score: 3.45)
+   reasons: genre match (lofi) (+2.0); energy close to 0.35 (+0.95); acoustic pick (+0.5)
+4. Spacewalk Thoughts — Orbit Bloom  (score: 2.43)
+   reasons: mood match (chill) (+1.0); energy close to 0.35 (+0.93); acoustic pick (+0.5)
+5. Coffee Shop Stories — Slow Stereo  (score: 1.48)
+   reasons: energy close to 0.35 (+0.98); acoustic pick (+0.5)
+
+=== Profile: Deep Intense Rock ===
+preferences: {'genre': 'rock', 'mood': 'intense', 'energy': 0.9}
+
+1. Storm Runner — Voltline  (score: 3.99)
+   reasons: genre match (rock) (+2.0); mood match (intense) (+1.0); energy close to 0.9 (+0.99)
+2. Gym Hero — Max Pulse  (score: 1.97)
+   reasons: mood match (intense) (+1.0); energy close to 0.9 (+0.97)
+3. Pulse Reactor — Hz Division  (score: 0.95)
+   reasons: energy close to 0.9 (+0.95)
+4. Iron Veins — Blackforge  (score: 0.93)
+   reasons: energy close to 0.9 (+0.93)
+5. Sunrise City — Neon Echo  (score: 0.92)
+   reasons: energy close to 0.9 (+0.92)
+
+=== Profile: Conflicting (ambient + aggressive + high energy) ===
+preferences: {'genre': 'ambient', 'mood': 'aggressive', 'energy': 0.95}
+
+1. Spacewalk Thoughts — Orbit Bloom  (score: 2.33)
+   reasons: genre match (ambient) (+2.0); energy close to 0.95 (+0.33)
+2. Iron Veins — Blackforge  (score: 1.98)
+   reasons: mood match (aggressive) (+1.0); energy close to 0.95 (+0.98)
+3. Pulse Reactor — Hz Division  (score: 1.00)
+   reasons: energy close to 0.95 (+1.00)
+4. Gym Hero — Max Pulse  (score: 0.98)
+   reasons: energy close to 0.95 (+0.98)
+5. Storm Runner — Voltline  (score: 0.96)
+   reasons: energy close to 0.95 (+0.96)
+
+=== Profile: Conflicting (high energy + melancholy) ===
+preferences: {'genre': 'classical', 'mood': 'melancholy', 'energy': 0.9}
+
+1. Moonlit Sonata Redux — Clara Vey  (score: 3.40)
+   reasons: genre match (classical) (+2.0); mood match (melancholy) (+1.0); energy close to 0.9 (+0.40)
+2. Storm Runner — Voltline  (score: 0.99)
+   reasons: energy close to 0.9 (+0.99)
+3. Gym Hero — Max Pulse  (score: 0.97)
+   reasons: energy close to 0.9 (+0.97)
+4. Pulse Reactor — Hz Division  (score: 0.95)
+   reasons: energy close to 0.9 (+0.95)
+5. Iron Veins — Blackforge  (score: 0.93)
+   reasons: energy close to 0.9 (+0.93)
+```
+
+### Weight-shift experiment (genre 2.0 → 1.0, energy ×2)
+
+For the High-Energy Pop profile, halving the genre weight and doubling the energy
+weight produced the **same top-5 order**, only with compressed scores (Rooftop
+Lights narrowed the gap on Gym Hero). The ranking barely moved because this
+catalog's pop songs also happen to be high-energy, so genre and energy reinforce
+each other instead of competing. Takeaway: the change made the results *different*,
+not clearly *more accurate* — a sign the dataset is too small and correlated to
+really exercise the weights.
+
+Other experiment ideas for later:
+
 - What happened when you added tempo or valence to the score
 - How did your system behave for different types of users
 

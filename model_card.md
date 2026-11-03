@@ -80,6 +80,19 @@ Prompts:
 
 Where the system struggles or behaves unfairly. 
 
+The biggest weakness I found during testing is that **genre dominates everything
+else**. Because a genre match is worth +2.0 while the energy score can never add
+more than +1.0, the system will happily recommend a song that matches the genre
+even when it badly misses the energy the user asked for. I saw this directly with
+the "ambient + high energy" profile: *Spacewalk Thoughts* (an ambient track with
+energy 0.28) ranked #1 for a user who requested energy 0.95, beating songs that
+actually had the high energy they wanted. This creates a kind of filter bubble —
+once a user names a favorite genre, songs outside that genre are almost always
+pushed down, no matter how well they fit the mood or energy. The system also
+ignores `valence`, `tempo_bpm`, and `danceability` entirely, and treats genre/mood
+as all-or-nothing (a "pop" fan gets zero credit for an "indie pop" song), so it
+can't recognize near-misses that a human listener would enjoy.
+
 Prompts:  
 
 - Features it does not consider  
@@ -93,14 +106,46 @@ Prompts:
 
 How you checked whether the recommender behaved as expected. 
 
-Prompts:  
+I tested five user profiles: **High-Energy Pop**, **Chill Lofi**, **Deep Intense
+Rock**, and two "adversarial" profiles with conflicting preferences — **ambient +
+aggressive + high energy** and **classical + melancholy + high energy**. For each
+one I ran `python -m src.main` and read the top 5 results plus the reasons the
+system gave. I was mainly looking for two things: whether obvious profiles returned
+songs I'd actually expect, and whether the conflicting profiles would "break" the
+logic in a revealing way. The full terminal output is pasted in the README's
+Experiments section.
 
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
+**What surprised me:** the clean profiles behaved well and matched my intuition —
+Chill Lofi returned *Library Rain* and *Midnight Coding* at the top, which is
+exactly right. But the conflicting profiles exposed how strong the genre weight is.
+I was surprised that a weight experiment (halving genre, doubling energy) *didn't*
+change the top-5 order for the pop profile — the catalog is small enough that pop
+songs are also high-energy, so the signals agree and the ranking stayed put.
 
-No need for numeric metrics unless you created some.
+**Profile comparisons (plain language):**
+
+- **High-Energy Pop vs. Chill Lofi:** The pop profile floats upbeat, loud songs
+  like *Sunrise City* and *Gym Hero* to the top; the lofi profile pulls in quiet,
+  acoustic tracks like *Library Rain*. This makes sense — one asked for energy 0.9
+  and the other for 0.35, so they pull toward opposite ends of the catalog.
+- **High-Energy Pop vs. Deep Intense Rock:** Both want high energy, but swapping
+  the genre from pop to rock completely changes #1 — *Sunrise City* for pop,
+  *Storm Runner* for rock. It shows genre is the deciding factor whenever energy is
+  similar.
+- **Deep Intense Rock vs. Conflicting (ambient + high energy):** The rock profile
+  gets a clean top pick because its genre, mood, and energy all point the same way.
+  The ambient profile instead returns a *calm* ambient song at #1 even though the
+  user asked for high energy — the genre points alone were enough to win. This is
+  the clearest sign that genre is over-weighted.
+- **Why "Gym Hero" keeps showing up for a Happy Pop fan:** *Gym Hero* is tagged
+  pop with very high energy (0.93). A happy-pop fan asks for pop (+2.0) and high
+  energy (nearly a full point), so even though its mood is "intense," not "happy,"
+  it still scores high enough to sit near the top. In plain terms: it wins on two
+  of the three things the user cares about, and the one it misses (mood) isn't worth
+  enough points to knock it down.
+
+No numeric accuracy metrics were computed; evaluation was done by inspecting ranked
+output and reasons for each profile.
 
 ---
 

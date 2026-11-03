@@ -11,20 +11,42 @@ You will implement the functions in recommender.py:
 
 from src.recommender import load_songs, recommend_songs
 
+# Named taste profiles used to stress-test the recommender, including two
+# "adversarial" profiles with conflicting preferences.
+PROFILES = {
+    "High-Energy Pop": {"genre": "pop", "mood": "happy", "energy": 0.9},
+    "Chill Lofi": {
+        "genre": "lofi",
+        "mood": "chill",
+        "energy": 0.35,
+        "likes_acoustic": True,
+    },
+    "Deep Intense Rock": {"genre": "rock", "mood": "intense", "energy": 0.9},
+    # Adversarial: wants a calm genre but cranked-up energy + an angry mood.
+    "Conflicting (ambient + aggressive + high energy)": {
+        "genre": "ambient",
+        "mood": "aggressive",
+        "energy": 0.95,
+    },
+    # Adversarial: high energy but a sad mood (energy/mood pull apart).
+    "Conflicting (high energy + melancholy)": {
+        "genre": "classical",
+        "mood": "melancholy",
+        "energy": 0.9,
+    },
+}
+
 
 def main() -> None:
     songs = load_songs("data/songs.csv")
 
-    # Starter example profile
-    user_prefs = {"genre": "pop", "mood": "happy", "energy": 0.8}
-
-    recommendations = recommend_songs(user_prefs, songs, k=5)
-
-    print(f"\nUser profile: {user_prefs}")
-    print("\nTop recommendations:\n")
-    for rank, (song, score, explanation) in enumerate(recommendations, start=1):
-        print(f"{rank}. {song['title']} — {song['artist']}  (score: {score:.2f})")
-        print(f"   reasons: {explanation}")
+    for name, user_prefs in PROFILES.items():
+        recommendations = recommend_songs(user_prefs, songs, k=5)
+        print(f"\n=== Profile: {name} ===")
+        print(f"preferences: {user_prefs}\n")
+        for rank, (song, score, explanation) in enumerate(recommendations, start=1):
+            print(f"{rank}. {song['title']} — {song['artist']}  (score: {score:.2f})")
+            print(f"   reasons: {explanation}")
         print()
 
 
